@@ -1,7 +1,19 @@
 {
   "orders": [
-    { "id": 1, "text": "Order 1", "status": "orderPlaced" },
-    { "id": 2, "text": "Order 2", "status": "orderPlaced" },
-    { "id": 3, "text": "Order 3", "status": "orderPlaced" }
+    { "id": 1,
+      "item": "Chicken Biriyani",
+      "quantity": "2",
+      "image": "https://i0.wp.com/blendofspicesbysara.com/wp-content/uploads/2020/10/PXL_20201011_200951855.PORTRAIT-01.jpeg?resize=800%2C840&ssl=1"
+    },
+    { "id": 2,
+      "item": "Double Cheese Burst Pizza", 
+      "quantity": "4",
+      "image": "https://www.dominos.co.in//files/items/_1346164951.jpg"
+    },
+    { "id": 3, 
+      "item": "Fired Chicken", 
+      "quantity": "1",
+      "image": "https://twoplaidaprons.com/wp-content/uploads/2023/02/Korean-fried-chicken-wings-on-a-plate-thumbnail-shot.jpg"
+    }
   ]
 }

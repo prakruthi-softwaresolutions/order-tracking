@@ -1,213 +1,211 @@
-// import React, { useState, useEffect } from "react";
-// import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
-// import { Card, CardHeader, CardBody, Flex, Heading, List, Text } from "@chakra-ui/react";
-// import { DndProvider } from 'react-dnd';
-// import { HTML5Backend } from 'react-dnd-html5-backend';
-// import styled from "styled-components";  
-
-// const Container = styled.div`
-//   display: flex;
-// `;
-
-// const getItemStyle = (isDragging, draggableStyle) => ({
-//   background: isDragging ? "lightgreen" : "grey",
-//   ...draggableStyle,
-// });
-
-// function OrderCard({ order, index }) {
-//   return (
-//     <Draggable draggableId={order.id.toString()} index={index}>
-//       {(provided, snapshot) => (
-//         <div
-//           {...provided.draggableProps}
-//           {...provided.dragHandleProps}
-//           ref={provided.innerRef}
-//           style={getItemStyle(snapshot.isDragging, provided.draggableProps.style)}
-//         >
-//           <Card>
-//             <CardHeader>
-//               <Heading size="md">{order.text}</Heading>
-//             </CardHeader>
-//           </Card>
-//         </div>
-//       )}
-//     </Draggable>
-//   );
-// }
-
-// function OrderCardList({ title, list }) {
-//   return (
-//     <Card width="100%" height="100%">
-//       <CardHeader>
-//         <Heading size="md">{title}</Heading>
-//       </CardHeader>
-//       <CardBody>
-//         <Droppable droppableId={title.toLowerCase()} key={title.toLowerCase()}>
-//           {(provided, snapshot) => (
-//             <div ref={provided.innerRef} {...provided.droppableProps}>
-//               <List>
-//                 {list.map((order, index) => (
-//                   <OrderCard key={order.id} order={order} index={index} />
-//                 ))}
-//               </List>
-//               {provided.placeholder}
-//             </div>
-//           )}
-//         </Droppable>
-//       </CardBody>
-//     </Card>
-//   );
-// }
-
-// function OrderTrackingWindow() {
-//   const [orders, setOrders] = useState([
-//     { id: 1, text: "Sample Order" } 
-//   ]);
-
-//   useEffect(() => {
-    
-//   }, []);
-
-//   const onDragEnd = (result) => {
-    
-//     console.log(result);
-//   };
-
-//   return (
-//     <DndProvider backend={HTML5Backend}>
-//       <DragDropContext onDragEnd={onDragEnd}>
-//         <Container>
-//           {/* order placed */}
-//           <OrderCardList title="Orders Placed" list={orders} />
-
-//           {/* Processing */}
-//           <OrderCardList title="Processing" list={[]} />
-
-//           {/* ready to serve */}
-//           <OrderCardList title="Ready to Serve" list={[]} />
-//         </Container>
-//       </DragDropContext>
-//     </DndProvider>
-//   );
-// }
-
-// export default OrderTrackingWindow;
-
-
-
 import React, { useState, useEffect } from "react";
-import { DndProvider, useDrag, useDrop } from "react-dnd";
-import { HTML5Backend } from "react-dnd-html5-backend";
+import axios from "axios";
 import {
+  VStack,
+  Heading,
+  IconButton,
+  StackDivider,
+  Stack,
+  Grid,
   Card,
   CardHeader,
   CardBody,
-  Flex,
-  Heading,
-  Stack,
-  StackDivider,
+  Box,
+  Button,
+  Image,
   Text,
-  background,
+  CardFooter,
 } from "@chakra-ui/react";
-import axios from "axios";
-
-const ItemType = "ORDER";
-
-const OrderCard = ({ id, text, index, moveCard }) => {
-  const [, ref] = useDrag({
-    type: ItemType,
-    item: { id, index },
-  });
-
-  const [, drop] = useDrop({
-    accept: ItemType,
-    hover: (draggedItem) => {
-      if (draggedItem.index !== index) {
-        moveCard(draggedItem.index, index);
-        draggedItem.index = index;
-      }
-    },
-  });
-
-  return (
-    <div style={{background:'gray'}} ref={(node) => ref(drop(node))}>
-      <Card>
-        <CardHeader>
-          <Heading size="md">{text}</Heading>
-        </CardHeader>
-      </Card>
-    </div>
-  );
-};
+import { CheckIcon } from "@chakra-ui/icons";
 
 function OrderTrackingWindow() {
-  const [orderList, setOrderList] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [inProgress, setInProgress] = useState([]);
+  const [completed, setCompleted] = useState([]);
 
   useEffect(() => {
-    // Fetch data from the JSON server
-    axios.get("http://localhost:3001/orders").then((response) => {
-      setOrderList(response.data);
-    });
+    axios
+      .get("http://localhost:3001/orders")
+      .then((response) => {
+        const ordersData = response.data;
+
+        if (Array.isArray(ordersData)) {
+          const initialOrders = ordersData.map((order) => ({
+            id: order.id,
+            text: order.item,
+            image: order.image,
+            quantity: order.quantity,
+          }));
+          setOrders(initialOrders);
+        } else {
+          console.error("Invalid data format:", ordersData);
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching data:", error);
+      });
   }, []);
 
-  const moveCard = (fromIndex, toIndex) => {
-    const updatedOrderList = [...orderList];
-    const [movedOrder] = updatedOrderList.splice(fromIndex, 1);
-    updatedOrderList.splice(toIndex, 0, movedOrder);
-    setOrderList(updatedOrderList);
+  const addToProgress = (id) => {
+    const item = orders.find((x) => x.id === id);
+    setInProgress([item, ...inProgress]);
+    const filterArray = orders.filter((x) => x.id !== id);
+    setOrders(filterArray);
+  };
+
+  const addToCompleted = (id) => {
+    const item = inProgress.find((x) => x.id === id);
+    setCompleted([item, ...completed]);
+    const filterArray = inProgress.filter((x) => x.id !== id);
+    setInProgress(filterArray);
+  };
+
+  const removeFromCompleted = (id) => {
+    const filterArray = completed.filter((x) => x.id !== id);
+    setCompleted(filterArray);
   };
 
   return (
-    <DndProvider backend={HTML5Backend}>
-      <>
-        <Text
-          bgGradient="linear(to-l, #7928CA, #FF0080)"
-          bgClip="text"
-          fontSize="xl"
-          fontWeight="extrabold"
-        >
-          Orders Tracking
-        </Text>
-        <Flex justify="space-around" align="center" height="100vh" width="100vw" p="4">
-          {/* order placed */}
-          <OrderCardList
-            title="Orders Placed"
-            list={orderList}
-            moveCard={moveCard}
-          />
+    <VStack align="center" spacing="4">
+      <Grid
+        templateColumns="repeat(3, 1fr)"
+        gap={4}
+        height="100vh"
+        width="100%"
+        p="4"
+      >
+        {/* Orders Placed */}
+        <Card bg="blue.100" height="100%" width="100%">
+          <CardHeader>
+            <Heading size="md">Orders Placed</Heading>
+          </CardHeader>
+          <CardBody>
+            <Stack spacing="4">
+              {orders.map((item) => (
+                <Card
+                  direction={{ base: "column", sm: "row" }}
+                  overflow="hidden"
+                  variant="outline"
+                  key={item.id}
+                >
+                  <Image
+                    objectFit="cover"
+                    maxW={{ base: "100%", sm: "200px" }}
+                    src={item.image}
+                    alt={item.text}
+                  />
 
-          {/* Processing */}
-          <OrderCardList title="Processing" list={[]} moveCard={moveCard} />
+                  <Stack>
+                    <CardBody>
+                      <Heading size="md">{item.text}</Heading>
 
-          {/* ready to serve */}
-          <OrderCardList title="Ready to Serve" list={[]} moveCard={moveCard} />
-        </Flex>
-      </>
-    </DndProvider>
+                      <Text py="2">Quantity: {item.quantity}</Text>
+                    </CardBody>
+
+                    <CardFooter>
+                      <IconButton
+                        icon={<CheckIcon />}
+                        onClick={() => addToProgress(item.id)}
+                        ml={2}
+                        colorScheme="green"
+                      />
+                    </CardFooter>
+                  </Stack>
+                </Card>
+              ))}
+            </Stack>
+          </CardBody>
+        </Card>
+
+        {/* Processing */}
+        <Card bg="yellow.100" height="100%" width="100%">
+          <CardHeader>
+            <Heading size="md">Processing</Heading>
+          </CardHeader>
+          <CardBody>
+            <Stack spacing="4">
+              {inProgress.map((item) => (
+                <Card
+                direction={{ base: "column", sm: "row" }}
+                overflow="hidden"
+                variant="outline"
+                key={item.id}
+              >
+                <Image
+                  objectFit="cover"
+                  maxW={{ base: "100%", sm: "200px" }}
+                  src={item.image}
+                  alt={item.text}
+                />
+
+                <Stack>
+                  <CardBody>
+                    <Heading size="md">{item.text}</Heading>
+
+                    <Text py="2">Quantity: {item.quantity}</Text>
+                  </CardBody>
+
+                    <CardFooter>
+                      <IconButton
+                        icon={<CheckIcon />}
+                        onClick={() => addToCompleted(item.id)}
+                        ml={2}
+                        colorScheme="green"
+                      />
+                    </CardFooter>
+                  </Stack>
+                </Card>
+              ))}
+            </Stack>
+          </CardBody>
+        </Card>
+
+        {/* Ready to Serve */}
+        <Card bg="green.100" height="100%" width="100%">
+          <CardHeader>
+            <Heading size="md">Ready to Serve</Heading>
+          </CardHeader>
+          <CardBody>
+            <Stack spacing="4">
+              {completed.map((item) => (
+                <Card
+                direction={{ base: "column", sm: "row" }}
+                overflow="hidden"
+                variant="outline"
+                key={item.id}
+              >
+                <Image
+                  objectFit="cover"
+                  maxW={{ base: "100%", sm: "200px" }}
+                  src={item.image}
+                  alt={item.text}
+                />
+
+                <Stack>
+                  <CardBody>
+                    <Heading size="md">{item.text}</Heading>
+
+                    <Text py="2">Quantity: {item.quantity}</Text>
+                  </CardBody>
+
+
+                    <CardFooter>
+                      <Button
+                        colorScheme="green"
+                        onClick={() => removeFromCompleted(item.id)}
+                      >
+                        Served
+                      </Button>
+                    </CardFooter>
+                  </Stack>
+                </Card>
+              ))}
+            </Stack>
+          </CardBody>
+        </Card>
+      </Grid>
+    </VStack>
   );
 }
 
-const OrderCardList = ({ title, list, moveCard }) => (
-  <Card width="100%" height="100%" m={1}>
-    <CardHeader>
-      <Heading size="md">{title}</Heading>
-    </CardHeader>
-
-    <CardBody>
-      <Stack divider={<StackDivider />} spacing="4">
-        {list.map((order, index) => (
-          <OrderCard
-            key={order.id}
-            id={order.id}
-            text={order.text}
-            index={index}
-            moveCard={moveCard}
-          />
-        ))}
-      </Stack>
-    </CardBody>
-  </Card>
-);
-
 export default OrderTrackingWindow;
-
